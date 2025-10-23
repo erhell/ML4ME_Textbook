@@ -380,14 +380,8 @@ window.Quarto = {
   <li><a href="#possible-experiments" id="toc-possible-experiments" class="nav-link" data-scroll-target="#possible-experiments"><span class="header-section-number">7.6</span> Possible Experiments</a></li>
   <li><a href="#summary-and-the-bridge-to-vaes" id="toc-summary-and-the-bridge-to-vaes" class="nav-link" data-scroll-target="#summary-and-the-bridge-to-vaes"><span class="header-section-number">7.7</span> Summary and the bridge to VAEs</a>
   <ul class="collapse">
-  <li><a href="#bayesian-inference-quantifies-uncertainty" id="toc-bayesian-inference-quantifies-uncertainty" class="nav-link" data-scroll-target="#bayesian-inference-quantifies-uncertainty"><span class="header-section-number">7.7.1</span> 1. <strong>Bayesian Inference Quantifies Uncertainty</strong></a></li>
-  <li><a href="#linear-models-have-limitations" id="toc-linear-models-have-limitations" class="nav-link" data-scroll-target="#linear-models-have-limitations"><span class="header-section-number">7.7.2</span> 2. <strong>Linear Models Have Limitations</strong></a></li>
-  <li><a href="#neural-networks-provide-flexibility-at-the-cost-of-an-intractable-posterior" id="toc-neural-networks-provide-flexibility-at-the-cost-of-an-intractable-posterior" class="nav-link" data-scroll-target="#neural-networks-provide-flexibility-at-the-cost-of-an-intractable-posterior"><span class="header-section-number">7.7.3</span> 3. <strong>Neural Networks Provide Flexibility at the cost of an intractable posterior</strong></a></li>
-  <li><a href="#mcmc-accurate-but-slow" id="toc-mcmc-accurate-but-slow" class="nav-link" data-scroll-target="#mcmc-accurate-but-slow"><span class="header-section-number">7.7.4</span> 4. <strong>MCMC: Accurate but Slow</strong></a></li>
-  <li><a href="#variational-inference-fast-approximation" id="toc-variational-inference-fast-approximation" class="nav-link" data-scroll-target="#variational-inference-fast-approximation"><span class="header-section-number">7.7.5</span> 5. <strong>Variational Inference: Fast Approximation</strong></a></li>
-  <li><a href="#function-space-vs-weight-space" id="toc-function-space-vs-weight-space" class="nav-link" data-scroll-target="#function-space-vs-weight-space"><span class="header-section-number">7.7.6</span> 6. <strong>Function Space vs Weight Space</strong></a></li>
-  <li><a href="#looking-forward-to-vaes-variational-autoencoders" id="toc-looking-forward-to-vaes-variational-autoencoders" class="nav-link" data-scroll-target="#looking-forward-to-vaes-variational-autoencoders"><span class="header-section-number">7.7.7</span> Looking forward to VAEs (Variational Autoencoders)</a></li>
-  <li><a href="#stochastic-vi" id="toc-stochastic-vi" class="nav-link" data-scroll-target="#stochastic-vi"><span class="header-section-number">7.7.8</span> Stochastic VI</a></li>
+  <li><a href="#looking-forward-to-vaes-variational-autoencoders" id="toc-looking-forward-to-vaes-variational-autoencoders" class="nav-link" data-scroll-target="#looking-forward-to-vaes-variational-autoencoders"><span class="header-section-number">7.7.1</span> Looking forward to VAEs (Variational Autoencoders)</a></li>
+  <li><a href="#stochastic-vi" id="toc-stochastic-vi" class="nav-link" data-scroll-target="#stochastic-vi"><span class="header-section-number">7.7.2</span> Stochastic VI</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -1629,57 +1623,14 @@ Training complete!</code></pre>
 <section id="summary-and-the-bridge-to-vaes" class="level2" data-number="7.7">
 <h2 data-number="7.7" class="anchored" data-anchor-id="summary-and-the-bridge-to-vaes"><span class="header-section-number">7.7</span> Summary and the bridge to VAEs</h2>
 <p>We saw a few key takeaways in this notebook:</p>
-<section id="bayesian-inference-quantifies-uncertainty" class="level3" data-number="7.7.1">
-<h3 data-number="7.7.1" class="anchored" data-anchor-id="bayesian-inference-quantifies-uncertainty"><span class="header-section-number">7.7.1</span> 1. <strong>Bayesian Inference Quantifies Uncertainty</strong></h3>
-<ul>
-<li>Instead of a single “best” model, we maintain a distribution over models</li>
-<li>The <strong>posterior predictive distribution</strong> <span class="math inline">\(p(y_* | x_*, X, Y)\)</span> gives us predictions <strong>with uncertainty</strong></li>
-</ul>
-</section>
-<section id="linear-models-have-limitations" class="level3" data-number="7.7.2">
-<h3 data-number="7.7.2" class="anchored" data-anchor-id="linear-models-have-limitations"><span class="header-section-number">7.7.2</span> 2. <strong>Linear Models Have Limitations</strong></h3>
-<ul>
-<li><strong>Bayesian linear regression</strong> has exact, closed-form posteriors (Gaussian)</li>
-<li>This allows us to compute predictive mean and variance analytically</li>
-<li>However, they cannot capture nonlinear relationships, as we saw in this example</li>
-</ul>
-</section>
-<section id="neural-networks-provide-flexibility-at-the-cost-of-an-intractable-posterior" class="level3" data-number="7.7.3">
-<h3 data-number="7.7.3" class="anchored" data-anchor-id="neural-networks-provide-flexibility-at-the-cost-of-an-intractable-posterior"><span class="header-section-number">7.7.3</span> 3. <strong>Neural Networks Provide Flexibility at the cost of an intractable posterior</strong></h3>
-<ul>
-<li>Even a small 1-hidden-layer network can approximate complex functions</li>
-<li><strong>Prior predictive</strong> shows diverse possible functions before seeing data</li>
-<li><strong>Challenge</strong>: Posterior <span class="math inline">\(p(\mathbf{w} | X, Y)\)</span> is no longer tractable.</li>
-</ul>
-</section>
-<section id="mcmc-accurate-but-slow" class="level3" data-number="7.7.4">
-<h3 data-number="7.7.4" class="anchored" data-anchor-id="mcmc-accurate-but-slow"><span class="header-section-number">7.7.4</span> 4. <strong>MCMC: Accurate but Slow</strong></h3>
-<ul>
-<li>Markov Chain Monte Carlo samples from the true posterior</li>
-<li><strong>Pros</strong>: Asymptotically exact, unbiased</li>
-<li><strong>Cons</strong>: Computationally expensive, slow for high-dimensional models</li>
-<li>Useful as a <strong>reference</strong> for validation</li>
-</ul>
-</section>
-<section id="variational-inference-fast-approximation" class="level3" data-number="7.7.5">
-<h3 data-number="7.7.5" class="anchored" data-anchor-id="variational-inference-fast-approximation"><span class="header-section-number">7.7.5</span> 5. <strong>Variational Inference: Fast Approximation</strong></h3>
-<ul>
-<li>Approximate <span class="math inline">\(p(\mathbf{w} | X, Y)\)</span> with a tractable family <span class="math inline">\(q_\phi(\mathbf{w})\)</span></li>
-<li>Optimize <span class="math inline">\(\phi\)</span> to maximize the <strong>ELBO</strong>: <span class="math display">\[\mathcal{L}(\phi) = \mathbb{E}_{q_\phi}\left[\log p(Y | X, \mathbf{w})\right] - \text{KL}(q_\phi(\mathbf{w}) || p(\mathbf{w}))\]</span></li>
-<li><strong>Reparameterization trick</strong> enables low-variance gradient estimates</li>
-<li><strong>Result</strong>: Posterior approximation in seconds instead of minutes</li>
-</ul>
-</section>
-<section id="function-space-vs-weight-space" class="level3" data-number="7.7.6">
-<h3 data-number="7.7.6" class="anchored" data-anchor-id="function-space-vs-weight-space"><span class="header-section-number">7.7.6</span> 6. <strong>Function Space vs Weight Space</strong></h3>
-<ul>
-<li>We don’t visualize high-dimensional weight distributions directly</li>
-<li>Instead, we visualize <strong>functions</strong> sampled from the posterior</li>
-<li><strong>Posterior predictive</strong> is what matters for making predictions!</li>
-</ul>
-</section>
-<section id="looking-forward-to-vaes-variational-autoencoders" class="level3" data-number="7.7.7">
-<h3 data-number="7.7.7" class="anchored" data-anchor-id="looking-forward-to-vaes-variational-autoencoders"><span class="header-section-number">7.7.7</span> Looking forward to VAEs (Variational Autoencoders)</h3>
+<p><strong>Bayesian Inference Quantifies Uncertainty</strong> - Instead of a single “best” model, we maintain a distribution over models - The <strong>posterior predictive distribution</strong> <span class="math inline">\(p(y_* | x_*, X, Y)\)</span> gives us predictions <strong>with uncertainty</strong></p>
+<p><strong>Linear Models Have Limitations</strong> - <strong>Bayesian linear regression</strong> has exact, closed-form posteriors (Gaussian) - This allows us to compute predictive mean and variance analytically - However, they cannot capture nonlinear relationships, as we saw in this example</p>
+<p><strong>Neural Networks Provide Flexibility at the cost of an intractable posterior</strong> - Even a small 1-hidden-layer network can approximate complex functions - <strong>Prior predictive</strong> shows diverse possible functions before seeing data - <strong>Challenge</strong>: Posterior <span class="math inline">\(p(\mathbf{w} | X, Y)\)</span> is no longer tractable.</p>
+<p><strong>MCMC: Accurate but Slow</strong> - Markov Chain Monte Carlo samples from the true posterior - <strong>Pros</strong>: Asymptotically exact, unbiased - <strong>Cons</strong>: Computationally expensive, slow for high-dimensional models - Useful as a <strong>reference</strong> for validation</p>
+<p><strong>Variational Inference: Fast Approximation</strong> - Approximate <span class="math inline">\(p(\mathbf{w} | X, Y)\)</span> with a tractable family <span class="math inline">\(q_\phi(\mathbf{w})\)</span> - Optimize <span class="math inline">\(\phi\)</span> to maximize the <strong>ELBO</strong>: <span class="math display">\[\mathcal{L}(\phi) = \mathbb{E}_{q_\phi}\left[\log p(Y | X, \mathbf{w})\right] - \text{KL}(q_\phi(\mathbf{w}) || p(\mathbf{w}))\]</span> - <strong>Reparameterization trick</strong> enables low-variance gradient estimates - <strong>Result</strong>: Posterior approximation in seconds instead of minutes</p>
+<p><strong>Function Space vs Weight Space</strong> - We don’t visualize high-dimensional weight distributions directly - Instead, we visualize <strong>functions</strong> sampled from the posterior - <strong>Posterior predictive</strong> is what matters for making predictions!</p>
+<section id="looking-forward-to-vaes-variational-autoencoders" class="level3" data-number="7.7.1">
+<h3 data-number="7.7.1" class="anchored" data-anchor-id="looking-forward-to-vaes-variational-autoencoders"><span class="header-section-number">7.7.1</span> Looking forward to VAEs (Variational Autoencoders)</h3>
 <p>The VI approach you learned here is the <strong>same mathematical foundation</strong> for VAEs. The key differences are:</p>
 <ul>
 <li><strong>Here (Bayesian NN)</strong>: Posterior over <strong>weights</strong> <span class="math inline">\(p(\mathbf{w} | X, Y)\)</span></li>
@@ -1688,8 +1639,8 @@ Training complete!</code></pre>
 <p>The ELBO, reparameterization trick, and optimization strategy are identical.</p>
 <p>Moreover, in VAEs, instead of optimizing <span class="math inline">\(q_\phi(z)\)</span> separately for each datapoint <span class="math inline">\(x\)</span>, we learn an <strong>encoder network</strong> <span class="math inline">\(q_\phi(z | x)\)</span> that works for <strong>all</strong> <span class="math inline">\(x\)</span>. This is called <strong>amortized inference</strong>.</p>
 </section>
-<section id="stochastic-vi" class="level3" data-number="7.7.8">
-<h3 data-number="7.7.8" class="anchored" data-anchor-id="stochastic-vi"><span class="header-section-number">7.7.8</span> Stochastic VI</h3>
+<section id="stochastic-vi" class="level3" data-number="7.7.2">
+<h3 data-number="7.7.2" class="anchored" data-anchor-id="stochastic-vi"><span class="header-section-number">7.7.2</span> Stochastic VI</h3>
 <p>For very large datasets, we can use <strong>mini-batches</strong> and stochastic optimization, much like we did for gradient descent, to scale VI to millions of datapoints.</p>
 <p><strong>Questions to Reflect on</strong></p>
 <p>Think about these before moving to the next notebook:</p>
