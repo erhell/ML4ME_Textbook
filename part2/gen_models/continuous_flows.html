@@ -468,8 +468,8 @@ v_\theta(\mathbf{z}(t),t) \\
 \end{bmatrix}.
 \]</span></p>
 <p>Which we can see involves solving the ODE backwards in time from <span class="math inline">\(t_1 = T\)</span> to <span class="math inline">\(t_0 = 0\)</span> and can recover both the latent variable <span class="math inline">\(\mathbf{z}_0\)</span> and the log-density <span class="math inline">\(\log p(\mathbf{x})\)</span> given a training sample <span class="math inline">\(\mathbf{x}\)</span>.</p>
-<p>Solving this IVP can be done in many ways, including using existing ODE solvers like Runge-Kutta methods or adaptive solvers, and the cost is largely determined by the complexity of the velocity field and the stiffness of the ODE, since more complex velocity fields may require more function evaluations to accurately solve the ODE. Further techniques are used to reduce the computational burden, such through the use of Jacobian-vector products to compute the trace term efficiently, the use of the Hutchinson’s trace estimator, as well as regularization methods to ensure smoothness of the velocity field, which can help in reducing the number of function evaluations needed during ODE solving, but these details are beyond the scope of this book. For further details see the original paper by <a href="https://arxiv.org/abs/1806.07366">Chen et al., 2018</a> and the follow-up work by <a href="https://arxiv.org/pdf/1810.01367">Grathwohl et al., 2019</a>.</p>
-<p>To gain some intuition about continuous flows, we will do a couple of simple experiments using a simple flow integrator using Runge-Kutta 45 – in practice you could use an existing solver or customized code with some of the advanced tricks mentioned above, but this will allow us to get the main concept across with minimal code complexity.</p>
+<p>Solving this IVP can be done in many ways, including using existing ODE solvers like Runge-Kutta methods or adaptive solvers, and the cost is largely determined by the complexity of the velocity field and the stiffness of the ODE, since more complex velocity fields may require more function evaluations to accurately solve the ODE. An important caveat to this is that the solver must be itself differentiable, since we need to be able to differentiate through it to see how to modify the vector field. This is not the case for many existing ODE solvers you may have used.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> Further techniques are used to reduce the computational burden, such through the use of Jacobian-vector products to compute the trace term efficiently, the use of the Hutchinson’s trace estimator, as well as regularization methods to ensure smoothness of the velocity field, which can help in reducing the number of function evaluations needed during ODE solving, but these details are beyond the scope of this book. For further details see the original paper by <a href="https://arxiv.org/abs/1806.07366">Chen et al., 2018</a> and the follow-up work by <a href="https://arxiv.org/pdf/1810.01367">Grathwohl et al., 2019</a>.</p>
+<div class="no-row-height column-margin column-container"><div id="fn2"><p><sup>2</sup>&nbsp;Interestingly enough, we showed in our <a href="../../part1/taking_derivatives.html">review of automatic differentiation</a> how to make a Verlet Integrator differentiable. In practice, one could use an existing ODE solver that was designed to be differentiable, such as <code>torchdiffeq</code> in PyTorch, which we will use in the experiments below.</p></div></div><p>To gain some intuition about continuous flows, we will do a couple of simple experiments using a simple flow integrator using Runge-Kutta 45 – in practice you could use an existing solver or customized code with some of the advanced tricks mentioned above, but this will allow us to get the main concept across with minimal code complexity.</p>
 <div id="efd7e461" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Show Code</summary>
@@ -702,7 +702,7 @@ Mean absolute log-density error: 4.175e-06</code></pre>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#%pip install torchdiffeq</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="3b2a89b7" class="cell" data-execution_count="8">
+<div id="3b2a89b7" class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torchdiffeq <span class="im">import</span> odeint</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sample_base_gaussian(n: <span class="bu">int</span>) <span class="op">-&gt;</span> Tensor:</span>
@@ -728,84 +728,77 @@ Mean absolute log-density error: 4.175e-06</code></pre>
 <span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="co"># by changing these assignments below.</span></span>
 <span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>sample_base <span class="op">=</span> sample_base_uniform</span>
 <span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>log_prob_base <span class="op">=</span> log_prob_base_uniform</span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="co"># def sample_base(n):</span></span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="co">#     # create samples on the current device to avoid device mismatch</span></span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="co">#     return torch.randn(n, 1, device=device)</span></span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="co"># def log_prob_base(x):</span></span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="co">#     return -0.5 * x**2 - 0.5 * torch.log(2 * torch.pi * torch.ones_like(x))</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sample_target(n):</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># mixture of two Gaussians, 0.5 each</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    mix <span class="op">=</span> torch.randint(<span class="dv">0</span>, <span class="dv">2</span>, (n, <span class="dv">1</span>), device<span class="op">=</span>device).<span class="bu">float</span>()</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    means <span class="op">=</span> <span class="op">-</span><span class="dv">2</span> <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> mix) <span class="op">+</span> <span class="dv">2</span> <span class="op">*</span> mix</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> means <span class="op">+</span> <span class="fl">0.4</span> <span class="op">*</span> torch.randn(n, <span class="dv">1</span>, device<span class="op">=</span>device)</span>
 <span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sample_target(n):</span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># mixture of two Gaussians, 0.5 each — ensure tensors are on the correct device</span></span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>    mix <span class="op">=</span> torch.randint(<span class="dv">0</span>, <span class="dv">2</span>, (n, <span class="dv">1</span>), device<span class="op">=</span>device).<span class="bu">float</span>()</span>
-<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    means <span class="op">=</span> <span class="op">-</span><span class="dv">2</span> <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> mix) <span class="op">+</span> <span class="dv">2</span> <span class="op">*</span> mix</span>
-<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> means <span class="op">+</span> <span class="fl">0.4</span> <span class="op">*</span> torch.randn(n, <span class="dv">1</span>, device<span class="op">=</span>device)</span>
-<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> log_prob_target(x):</span>
-<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>    <span class="co"># mixture density for visualization only</span></span>
-<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>    denom <span class="op">=</span> <span class="fl">0.4</span> <span class="op">*</span> torch.sqrt(<span class="dv">2</span> <span class="op">*</span> torch.pi <span class="op">*</span> torch.ones_like(x))</span>
-<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>    p1 <span class="op">=</span> torch.exp(<span class="op">-</span><span class="fl">0.5</span> <span class="op">*</span> ((x <span class="op">+</span> <span class="dv">2</span>) <span class="op">/</span> <span class="fl">0.4</span>)<span class="op">**</span><span class="dv">2</span>) <span class="op">/</span> denom</span>
-<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>    p2 <span class="op">=</span> torch.exp(<span class="op">-</span><span class="fl">0.5</span> <span class="op">*</span> ((x <span class="op">-</span> <span class="dv">2</span>) <span class="op">/</span> <span class="fl">0.4</span>)<span class="op">**</span><span class="dv">2</span>) <span class="op">/</span> denom</span>
-<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> torch.log(<span class="fl">0.5</span> <span class="op">*</span> (p1 <span class="op">+</span> p2) <span class="op">+</span> <span class="fl">1e-9</span>)</span>
-<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the neural network vector field f(x,t)</span></span>
-<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CNF1D(nn.Module):</span>
-<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, hidden<span class="op">=</span><span class="dv">32</span>):</span>
-<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
-<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.net <span class="op">=</span> nn.Sequential(</span>
-<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>            nn.Linear(<span class="dv">1</span> <span class="op">+</span> <span class="dv">1</span>, hidden),</span>
-<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>            nn.Tanh(),</span>
-<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>            nn.Linear(hidden, hidden),</span>
-<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>            nn.Tanh(),</span>
-<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>            nn.Linear(hidden, <span class="dv">1</span>)</span>
-<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> log_prob_target(x):</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># mixture density for visualization only</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>    denom <span class="op">=</span> <span class="fl">0.4</span> <span class="op">*</span> torch.sqrt(<span class="dv">2</span> <span class="op">*</span> torch.pi <span class="op">*</span> torch.ones_like(x))</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    p1 <span class="op">=</span> torch.exp(<span class="op">-</span><span class="fl">0.5</span> <span class="op">*</span> ((x <span class="op">+</span> <span class="dv">2</span>) <span class="op">/</span> <span class="fl">0.4</span>)<span class="op">**</span><span class="dv">2</span>) <span class="op">/</span> denom</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    p2 <span class="op">=</span> torch.exp(<span class="op">-</span><span class="fl">0.5</span> <span class="op">*</span> ((x <span class="op">-</span> <span class="dv">2</span>) <span class="op">/</span> <span class="fl">0.4</span>)<span class="op">**</span><span class="dv">2</span>) <span class="op">/</span> denom</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> torch.log(<span class="fl">0.5</span> <span class="op">*</span> (p1 <span class="op">+</span> p2) <span class="op">+</span> <span class="fl">1e-9</span>)</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the neural network vector field f(x,t)</span></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CNF1D(nn.Module):</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, hidden<span class="op">=</span><span class="dv">32</span>):</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.net <span class="op">=</span> nn.Sequential(</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>            nn.Linear(<span class="dv">1</span> <span class="op">+</span> <span class="dv">1</span>, hidden),</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>            nn.Tanh(),</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>            nn.Linear(hidden, hidden),</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>            nn.Tanh(),</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>            nn.Linear(hidden, <span class="dv">1</span>)</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, t, x):</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">isinstance</span>(t, torch.Tensor):</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>            t <span class="op">=</span> t.to(x.device)</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>        t_in <span class="op">=</span> torch.ones_like(x) <span class="op">*</span> t</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.net(torch.cat([x, t_in], dim<span class="op">=</span><span class="dv">1</span>))</span>
 <span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, t, x):</span>
-<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>        <span class="co"># make sure t is broadcastable and on the same device as x</span></span>
-<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">isinstance</span>(t, torch.Tensor):</span>
-<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>            t <span class="op">=</span> t.to(x.device)</span>
-<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>        t_in <span class="op">=</span> torch.ones_like(x) <span class="op">*</span> t</span>
-<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.net(torch.cat([x, t_in], dim<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a><span class="co"># CNF dynamics: dx/dt = f, d(logp)/dt = -∂f/∂x</span></span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CNFDynamics(nn.Module):</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, fnet):</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fnet <span class="op">=</span> fnet</span>
 <span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a><span class="co"># CNF dynamics: dx/dt = f, d(logp)/dt = -∂f/∂x</span></span>
-<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CNFDynamics(nn.Module):</span>
-<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, fnet):</span>
-<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
-<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fnet <span class="op">=</span> fnet</span>
-<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, t, states):</span>
-<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>        x, logp <span class="op">=</span> states</span>
-<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>        x <span class="op">=</span> x.requires_grad_(<span class="va">True</span>)</span>
-<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>        f <span class="op">=</span> <span class="va">self</span>.fnet(t, x)</span>
-<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>        df_dx <span class="op">=</span> torch.autograd.grad(f, x, torch.ones_like(f), create_graph<span class="op">=</span><span class="va">True</span>)[<span class="dv">0</span>]</span>
-<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>        dlogp <span class="op">=</span> <span class="op">-</span>df_dx</span>
-<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> f, dlogp</span>
-<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>fnet <span class="op">=</span> CNF1D(hidden<span class="op">=</span><span class="dv">32</span>).to(device)</span>
-<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>dynamics <span class="op">=</span> CNFDynamics(fnet)</span>
-<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> optim.AdamW(fnet.parameters(), lr<span class="op">=</span><span class="fl">1e-3</span>)</span>
-<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> step <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">600</span>):</span>
-<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a>    x0 <span class="op">=</span> sample_base(<span class="dv">256</span>)</span>
-<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>    logp0 <span class="op">=</span> log_prob_base(x0)</span>
-<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ensure time tensor is on the same device as the model/state</span></span>
-<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> torch.tensor([<span class="fl">0.0</span>, <span class="fl">1.0</span>], device<span class="op">=</span>device)</span>
-<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>    x1, logp1 <span class="op">=</span> odeint(dynamics, (x0, logp0), t)</span>
-<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>    x1, logp1 <span class="op">=</span> x1[<span class="op">-</span><span class="dv">1</span>], logp1[<span class="op">-</span><span class="dv">1</span>]</span>
-<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Negative log-likelihood under target (maximum likelihood)</span></span>
-<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>    logpt <span class="op">=</span> log_prob_target(x1)</span>
-<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a>    loss <span class="op">=</span> <span class="op">-</span>(logpt <span class="op">-</span> logp1).mean()</span>
-<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a>    optimizer.zero_grad()</span>
-<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>    loss.backward()</span>
-<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>    optimizer.step()</span>
-<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> step <span class="op">%</span> <span class="dv">50</span> <span class="op">==</span> <span class="dv">0</span>:</span>
-<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Step </span><span class="sc">{</span>step<span class="sc">}</span><span class="ss">, loss </span><span class="sc">{</span>loss<span class="sc">.</span>item()<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Training complete."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, t, states):</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>        x, logp <span class="op">=</span> states</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>        x <span class="op">=</span> x.requires_grad_(<span class="va">True</span>)</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>        f <span class="op">=</span> <span class="va">self</span>.fnet(t, x)</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>        df_dx <span class="op">=</span> torch.autograd.grad(f, x, torch.ones_like(f), create_graph<span class="op">=</span><span class="va">True</span>)[<span class="dv">0</span>]</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>        dlogp <span class="op">=</span> <span class="op">-</span>df_dx</span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> f, dlogp</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>fnet <span class="op">=</span> CNF1D(hidden<span class="op">=</span><span class="dv">32</span>).to(device)</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>dynamics <span class="op">=</span> CNFDynamics(fnet)</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> optim.AdamW(fnet.parameters(), lr<span class="op">=</span><span class="fl">1e-3</span>)</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> step <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">600</span>):</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>    x0 <span class="op">=</span> sample_base(<span class="dv">256</span>)</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>    logp0 <span class="op">=</span> log_prob_base(x0)</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ensure time tensor is on the same device as the model/state</span></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> torch.tensor([<span class="fl">0.0</span>, <span class="fl">1.0</span>], device<span class="op">=</span>device)</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>    x1, logp1 <span class="op">=</span> odeint(dynamics, (x0, logp0), t)</span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>    x1, logp1 <span class="op">=</span> x1[<span class="op">-</span><span class="dv">1</span>], logp1[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Negative log-likelihood under target (maximum likelihood)</span></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a>    logpt <span class="op">=</span> log_prob_target(x1)</span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>    loss <span class="op">=</span> <span class="op">-</span>(logpt <span class="op">-</span> logp1).mean()</span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>    optimizer.zero_grad()</span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>    loss.backward()</span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>    optimizer.step()</span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> step <span class="op">%</span> <span class="dv">50</span> <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Step </span><span class="sc">{</span>step<span class="sc">}</span><span class="ss">, loss </span><span class="sc">{</span>loss<span class="sc">.</span>item()<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Training complete."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Step 0, loss 2.3605
 Step 50, loss 1.5631
@@ -822,7 +815,7 @@ Step 550, loss 0.0485
 Training complete.</code></pre>
 </div>
 </div>
-<div id="3cc78a45" class="cell" data-execution_count="10">
+<div id="3cc78a45" class="cell">
 <details class="code-fold">
 <summary>Show Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
@@ -846,7 +839,7 @@ Training complete.</code></pre>
 <span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>p_target <span class="op">=</span> torch.exp(log_prob_target(xs_grad)).squeeze().detach().cpu().numpy()</span>
 <span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(xplot, p_base)</span>
 <span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Evolution (trajectories) -- move to CPU/numpy for plotting</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Evolution (trajectories)</span></span>
 <span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>xt_np <span class="op">=</span> xt.detach().cpu().numpy()</span>
 <span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="bu">len</span>(xs), <span class="dv">10</span>):</span>
 <span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    axes[<span class="dv">1</span>].plot(xt_np[:, i, <span class="dv">0</span>], t.cpu().numpy(), color<span class="op">=</span><span class="st">"C0"</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
@@ -855,7 +848,7 @@ Training complete.</code></pre>
 <span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_ylabel(<span class="st">"t"</span>)</span>
 <span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Target vs learned</span></span>
-<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="co"># compute df/dx using autograd (now xs_grad requires grad and f_vals has grad_fn)</span></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="co"># compute df/dx using autograd</span></span>
 <span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>df_dx <span class="op">=</span> torch.autograd.grad(f_vals, xs_grad, torch.ones_like(f_vals), create_graph<span class="op">=</span><span class="va">False</span>)[<span class="dv">0</span>]</span>
 <span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>p_learned <span class="op">=</span> torch.exp(log_prob_base(xs_grad) <span class="op">-</span> df_dx).squeeze().detach().cpu().numpy()</span>
 <span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a></span>
