@@ -140,7 +140,7 @@ window.Quarto = {
 
 </head>
 
-<body class="nav-sidebar floating quarto-light">
+<body class="nav-sidebar floating slimcontent quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -388,7 +388,7 @@ window.Quarto = {
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content page-columns page-full" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../part2/part2.html">Model-Specific Approaches</a></li><li class="breadcrumb-item"><a href="../../part2/gen_models/normalizing_flows.html"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Normalizing Flows</span></a></li></ol></nav>
 <div class="quarto-title">
@@ -481,7 +481,7 @@ window.Quarto = {
 <p>VAEs <em>approximate</em> the data likelihood by maximizing an evidence lower bound, balancing a reconstruction term with a KL regularizer on the latent posterior. Normalizing flows instead learn an <em>exactly</em> normalizable density by composing invertible transformations that map a simple base distribution to the target data distribution using the change-of-variables formula.</p>
 <p>The key trade-off is between tractable posterior inference (VAE) and exact likelihood modeling with potentially sharper samples (flow). Both rely on simple base distributions, but flows <em>must</em> ensure every transformation remains invertible with a tractable Jacobian determinant.</p>
 </section>
-<section id="key-idea-the-change-of-variables-formula" class="level2" data-number="13.3">
+<section id="key-idea-the-change-of-variables-formula" class="level2 page-columns page-full" data-number="13.3">
 <h2 data-number="13.3" class="anchored" data-anchor-id="key-idea-the-change-of-variables-formula"><span class="header-section-number">13.3</span> Key Idea: The Change-of-Variables Formula</h2>
 <p>Suppose we want to transform a simple base random variable <span class="math inline">\(z\)</span> with known density <span class="math inline">\(p_Z(z)\)</span> into a new variable <span class="math inline">\(x = f(z)\)</span>. If <span class="math inline">\(f\)</span> is invertible and differentiable, then the density of <span class="math inline">\(x\)</span> is given by the Change-of-Variables formula:</p>
 <p><span class="math display">\[
@@ -647,7 +647,7 @@ f(z) = \tanh(z) = \frac{e^{z} - e^{-z}}{e^{z} + e^{-z}}, \quad f^{-1}(x) = \tanh
 </div>
 </div>
 </section>
-<section id="more-complex-transforms" class="level3" data-number="13.3.2">
+<section id="more-complex-transforms" class="level3 page-columns page-full" data-number="13.3.2">
 <h3 data-number="13.3.2" class="anchored" data-anchor-id="more-complex-transforms"><span class="header-section-number">13.3.2</span> More Complex Transforms</h3>
 <p>OK, so far so good, and the 1D change of variables is fairly intuitive. But how do we extend this to higher dimensions? For higher dimensions, the change-of-variables formula generalizes to: <span class="math display">\[
 p_X(\mathbf{x}) = p_Z(f^{-1}(\mathbf{x})) \left\lvert \det \frac{\partial f^{-1}(\mathbf{x})}{\partial \mathbf{x}} \right\rvert = p_Z(\mathbf{z}) \left\lvert \det \frac{\partial f(\mathbf{z})}{\partial \mathbf{z}} \right\rvert^{-1}.
@@ -666,10 +666,10 @@ p_X(\mathbf{x}) = p_Z(f^{-1}(\mathbf{x})) \left\lvert \det \frac{\partial f^{-1}
 <li><strong>Tractable Jacobian Determinant</strong>: So we can efficiently compute <span class="math inline">\(\log|\det \frac{\partial f(\mathbf{z})}{\partial \mathbf{z}}|\)</span>.</li>
 <li><strong>Expressive</strong>: So that the composition of multiple such transformations can model complex target distributions.</li>
 </ol>
-<section id="a-refresher-on-determinants" class="level4" data-number="13.3.2.1">
+<section id="a-refresher-on-determinants" class="level4 page-columns page-full" data-number="13.3.2.1">
 <h4 data-number="13.3.2.1" class="anchored" data-anchor-id="a-refresher-on-determinants"><span class="header-section-number">13.3.2.1</span> A Refresher on Determinants</h4>
-<p>Before going into specific transformations or architectures, let’s briefly refresh our understanding of determinants, in general. We will see that many of the common transformations in Normalizing Flows are designed to take advantage of one or more of the following properties of determinants:</p>
-<ul>
+<p>Before going into specific transformations or architectures, let’s briefly refresh our understanding of determinants, in general.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> We will see that many of the common transformations in Normalizing Flows are designed to take advantage of one or more of the following properties of determinants:</p>
+<div class="no-row-height column-margin column-container"><div id="fn1"><p><sup>1</sup>&nbsp;For some common matrix identities, I can recommend reviewing the <a href="https://www.math.uwaterloo.ca/~hwolkowi/matrixcookbook.pdf">Matrix Cookbook</a></p></div></div><ul>
 <li><strong>Product Rule</strong>: For two square matrices <span class="math inline">\(\mathbf{A}\)</span> and <span class="math inline">\(\mathbf{B}\)</span> of the same size, <span class="math inline">\(\det(\mathbf{A}\mathbf{B}) = \det(\mathbf{A}) \cdot \det(\mathbf{B})\)</span>. This means that for a composition of functions <span class="math inline">\(f = f_2 \circ f_1\)</span>, the Jacobian determinant is the product of the individual determinants: <span class="math inline">\(\det(J_f) = \det(J_{f_2}) \cdot \det(J_{f_1})\)</span>.</li>
 <li><strong>Matrix Inversion</strong>: The determinant of the inverse of a matrix is the reciprocal of the determinant: <span class="math inline">\(\det(\mathbf{A}^{-1}) = 1/\det(\mathbf{A})\)</span>. This is useful when computing the density of the transformed variable using the inverse transformation.</li>
 <li><strong>Eigenvalues</strong>: The determinant of a matrix can also be computed as the product of its eigenvalues. This property is sometimes used in flow architectures that involve spectral methods or transformations based on eigen-decompositions.</li>
@@ -826,8 +826,8 @@ p_X(\mathbf{x}) = p_Z(f^{-1}(\mathbf{x})) \left\lvert \det \frac{\partial f^{-1}
 <p>In practice, we can stack many such layers of different types to build a deep normalizing flow that can model complex target distributions. Each layer contributes to the overall transformation, and we can compute the log-density of the transformed variable by summing the log-determinants of each layer’s Jacobian. Each transform above comes with a Jacobian determinant that tells us how probability mass re-scales. In one dimension, the recipe is <span class="math display">\[
 \log p_Y(y) = \log p_Z(f^{-1}(y)) + \log\left|\frac{\mathrm{d} f^{-1}(y)}{\mathrm{d} y}\right| = \log p_Z(z) - \log\left|f'(z)\right|.
 \]</span> For multivariate flows with <span class="math inline">\(x = f(z)\)</span>, we track the log-determinant at every layer: <span class="math display">\[
-\log p_X(x) = \log p_Z(z) + \sum_{\ell=1}^L \log\left|\det J_{f_\ell}(h_{\ell-1})\right|,
-\]</span> where <span class="math inline">\(h_0 = x\)</span> and <span class="math inline">\(h_L = z\)</span>. Computing these terms is why we prefer architectures (like affine coupling, planar, or radial flows) with Jacobians that are either triangular or have closed-form determinants, so that we can avoid very expensive determinant calculations. When training a flow we maximise this exact log-likelihood, and during sampling we simply draw <span class="math inline">\(z \sim p_Z\)</span> and apply the inverses <span class="math inline">\(f_\ell^{-1}\)</span> in reverse order.</p>
+\log p_X(x) = \log p_Z(z_0) + \sum_{\ell=1}^K \log\left|\det J_{f_\ell}(z_{\ell-1})\right|,
+\]</span> these terms is why we prefer architectures (like affine coupling, planar, or radial flows) with Jacobians that are either triangular or have closed-form determinants, so that we can avoid very expensive determinant calculations. When training a flow we maximise this exact log-likelihood, and during sampling we simply draw <span class="math inline">\(z \sim p_Z\)</span> and apply the inverses <span class="math inline">\(f_\ell^{-1}\)</span> in reverse order.</p>
 </section>
 </section>
 <section id="constructing-a-flow-with-coupling-layers-using-realnvp" class="level2" data-number="13.4">
@@ -1248,6 +1248,7 @@ Epoch 300/300 | Loss: 2.401 | Log p(x): -2.401 | Div: 4.274</code></pre>
 
 
 </section>
+
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
