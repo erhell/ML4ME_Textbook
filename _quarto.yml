@@ -32,6 +32,9 @@ book:
         - part2/gen_models/VAEs.ipynb
         - part2/gen_models/normalizing_flows.ipynb
         - part2/gen_models/continuous_flows.ipynb
+        - part2/gen_models/score_matching.ipynb
+        - part2/gen_models/diffusion_models.ipynb
+        - part2/gen_models/flow_matching.ipynb
         #- part2/review_linear_models.qmd
         #- part2/review_NNs.qmd
         #- part2/regularization_NNs.qmd
