@@ -6,6 +6,7 @@ import numpy as np
 import seaborn as sns
 import torch
 import torch.nn as nn
+from PIL import Image
 from torch.utils.data import DataLoader, TensorDataset
 
 plt.style.use("seaborn-v0_8-muted")
@@ -66,6 +67,16 @@ def create_ring_gaussians(
     noise = np.random.randn(n_samples, 2) * cluster_std
     points = centers[assignments] + noise
     return points.astype(np.float32), assignments.astype(np.int64)
+
+
+def load_eth_z_logo_data(n_samples=5000) -> np.ndarray:
+    # Load from pre-saved npy file
+    data_points = np.load("../../data/ethz_logo_data.npy")
+    # # Resample to n_samples if necessary
+    if data_points.shape[0] > n_samples:
+        indices = np.random.choice(data_points.shape[0], size=n_samples, replace=False)
+        data_points = data_points[indices]
+    return data_points
 
 
 def make_loader(data: np.ndarray, batch_size: int) -> DataLoader:
